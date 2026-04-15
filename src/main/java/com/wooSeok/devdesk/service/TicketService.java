@@ -7,6 +7,7 @@ import com.wooSeok.devdesk.domain.enums.TicketStatus;
 import com.wooSeok.devdesk.dto.request.CreateTicketRequest;
 import com.wooSeok.devdesk.dto.request.UpdateTicketRequest;
 import com.wooSeok.devdesk.dto.response.TicketResponse;
+import com.wooSeok.devdesk.exception.InvalidStatusTransitionException;
 import com.wooSeok.devdesk.exception.ResourceNotFoundException;
 import com.wooSeok.devdesk.repository.ProjectRepository;
 import com.wooSeok.devdesk.repository.TicketRepository;
@@ -23,6 +24,7 @@ public class TicketService {
     private final TicketRepository ticketRepository;
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
+    private final AuditLogService auditLogService;
 
     public TicketResponse createTicket(CreateTicketRequest request) {
         Project project = projectRepository.findById(request.getProjectId())
@@ -70,7 +72,19 @@ public class TicketService {
 
         if (request.getTitle() != null) ticket.setTitle(request.getTitle());
         if (request.getDescription() != null) ticket.setDescription(request.getDescription());
-        if (request.getStatus() != null) ticket.setStatus(request.getStatus());
+        if (request.getStatus() != null) {
+            if (!ticket.getStatus().canTransitionTo(request.getStatus())) {
+                throw new InvalidStatusTransitionException(ticket.getStatus(), request.getStatus());
+            }
+            auditLogService.log(
+                    ticket,
+                    request.getChangedById(),
+                    "status",
+                    ticket.getStatus().name(),
+                    request.getStatus().name()
+            );
+            ticket.setStatus(request.getStatus());
+        }
         if (request.getPriority() != null) ticket.setPriority(request.getPriority());
 
         if (request.getAssigneeId() != null) {

@@ -2,6 +2,7 @@ package com.wooSeok.devdesk.dto.request;
 
 import com.wooSeok.devdesk.domain.enums.Priority;
 import com.wooSeok.devdesk.domain.enums.TicketStatus;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,4 +14,6 @@ public class UpdateTicketRequest {
     private TicketStatus status;
     private Priority priority;
     private Long assigneeId;
+    @NotNull
+    private Long changedById;
 }
