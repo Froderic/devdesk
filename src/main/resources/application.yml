@@ -12,9 +12,15 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
+
   docker:
     compose:
       enabled: false
 
 server:
   port: 8080
+
+app:
+  jwt:
+    secret: 3cfa76ef14937c1c0ea519f8fc057a80fcd04a7420f8e8bcd0a7567c272e007b
+    expiration: 86400000
