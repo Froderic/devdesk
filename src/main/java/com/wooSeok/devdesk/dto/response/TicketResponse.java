@@ -2,16 +2,18 @@ package com.wooSeok.devdesk.dto.response;
 
 import com.wooSeok.devdesk.domain.enums.Priority;
 import com.wooSeok.devdesk.domain.enums.TicketStatus;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Getter
 @Setter
 @Builder
-public class TicketResponse {
+@NoArgsConstructor
+@AllArgsConstructor
+
+public class TicketResponse implements Serializable {
     private Long id;
     private String title;
     private String description;

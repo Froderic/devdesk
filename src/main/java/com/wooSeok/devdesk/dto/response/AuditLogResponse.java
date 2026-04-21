@@ -1,15 +1,17 @@
 package com.wooSeok.devdesk.dto.response;
 
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Getter
 @Setter
 @Builder
-public class AuditLogResponse {
+@NoArgsConstructor
+@AllArgsConstructor
+
+public class AuditLogResponse implements Serializable {
     private Long id;
     private String fieldChanged;
     private String oldValue;
