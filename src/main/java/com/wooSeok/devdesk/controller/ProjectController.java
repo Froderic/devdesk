@@ -2,6 +2,7 @@ package com.wooSeok.devdesk.controller;
 
 import com.wooSeok.devdesk.dto.request.CreateProjectRequest;
 import com.wooSeok.devdesk.dto.response.ProjectResponse;
+import com.wooSeok.devdesk.dto.response.ProjectStatsResponse;
 import com.wooSeok.devdesk.service.ProjectService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,11 @@ public class ProjectController {
     @GetMapping
     public ResponseEntity<List<ProjectResponse>> getAllProjects() {
         return ResponseEntity.ok(projectService.getAllProjects());
+    }
+
+    @GetMapping("/{id}/stats")
+    public ResponseEntity<ProjectStatsResponse> getProjectStats(@PathVariable Long id) {
+        return ResponseEntity.ok(projectService.getProjectStats(id));
     }
 
     @DeleteMapping("/{id}")

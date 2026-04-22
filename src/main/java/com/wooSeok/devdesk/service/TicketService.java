@@ -15,6 +15,7 @@ import com.wooSeok.devdesk.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -69,7 +70,10 @@ public class TicketService {
                 .toList();
     }
 
-    @CacheEvict(value = "tickets", key = "#id")
+    @Caching(evict = {
+            @CacheEvict(value = "tickets", key = "#id"),
+            @CacheEvict(value = "project-stats", allEntries = true)
+    })
     public TicketResponse updateTicket(Long id, UpdateTicketRequest request) {
         Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found: " + id));
@@ -100,7 +104,10 @@ public class TicketService {
         return toResponse(ticketRepository.save(ticket));
     }
 
-    @CacheEvict(value = "tickets", key = "#id")
+    @Caching(evict = {
+            @CacheEvict(value = "tickets", key = "#id"),
+            @CacheEvict(value = "project-stats", allEntries = true)
+    })
     public void deleteTicket(Long id) {
         Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found: " + id));
