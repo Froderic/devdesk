@@ -8,6 +8,7 @@ import com.wooSeok.devdesk.dto.request.CreateTicketRequest;
 import com.wooSeok.devdesk.dto.request.UpdateTicketRequest;
 import com.wooSeok.devdesk.dto.response.TicketResponse;
 import com.wooSeok.devdesk.exception.InvalidStatusTransitionException;
+import com.wooSeok.devdesk.exception.OptimisticLockException;
 import com.wooSeok.devdesk.exception.ResourceNotFoundException;
 import com.wooSeok.devdesk.repository.ProjectRepository;
 import com.wooSeok.devdesk.repository.TicketRepository;
@@ -16,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -101,7 +103,11 @@ public class TicketService {
             ticket.setAssignee(assignee);
         }
 
-        return toResponse(ticketRepository.save(ticket));
+        try {
+            return toResponse(ticketRepository.save(ticket));
+        } catch (ObjectOptimisticLockingFailureException e) {
+            throw new OptimisticLockException();
+        }
     }
 
     @Caching(evict = {
@@ -126,6 +132,7 @@ public class TicketService {
                 .assigneeName(ticket.getAssignee() != null ? ticket.getAssignee().getName() : null)
                 .createdAt(ticket.getCreatedAt())
                 .updatedAt(ticket.getUpdatedAt())
+                .version(ticket.getVersion())
                 .build();
     }
 }

@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 
 public class TicketResponse implements Serializable {
     private Long id;
+    private Long version;
     private String title;
     private String description;
     private TicketStatus status;
