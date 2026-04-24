@@ -17,10 +17,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -65,11 +67,10 @@ public class TicketService {
         return toResponse(ticket);
     }
 
-    public List<TicketResponse> getAllTickets() {
-        return ticketRepository.findAll()
-                .stream()
-                .map(this::toResponse)
-                .toList();
+    public Page<TicketResponse> getAllTickets(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return ticketRepository.findAll(pageable)
+                .map(this::toResponse);
     }
 
     @Caching(evict = {

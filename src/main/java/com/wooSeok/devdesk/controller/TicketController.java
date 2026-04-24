@@ -6,11 +6,10 @@ import com.wooSeok.devdesk.dto.response.TicketResponse;
 import com.wooSeok.devdesk.service.TicketService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/tickets")
@@ -30,8 +29,10 @@ public class TicketController {
     }
 
     @GetMapping
-    public ResponseEntity<List<TicketResponse>> getAllTickets() {
-        return ResponseEntity.ok(ticketService.getAllTickets());
+    public ResponseEntity<Page<TicketResponse>> getAllTickets(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(ticketService.getAllTickets(page, size));
     }
 
     @PatchMapping("/{id}")

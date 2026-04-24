@@ -3,6 +3,7 @@ package com.wooSeok.devdesk.service;
 import com.wooSeok.devdesk.domain.entity.User;
 import com.wooSeok.devdesk.dto.request.CreateUserRequest;
 import com.wooSeok.devdesk.dto.response.UserResponse;
+import com.wooSeok.devdesk.exception.DuplicateEmailException;
 import com.wooSeok.devdesk.exception.ResourceNotFoundException;
 import com.wooSeok.devdesk.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,9 @@ public class UserService implements UserDetailsService {
     private final PasswordEncoder passwordEncoder;
 
     public UserResponse createUser(CreateUserRequest request) {
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new DuplicateEmailException(request.getEmail());
+        }
         User user = User.builder()
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
