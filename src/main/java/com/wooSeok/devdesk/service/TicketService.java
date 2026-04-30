@@ -67,10 +67,22 @@ public class TicketService {
         return toResponse(ticket);
     }
 
-    public Page<TicketResponse> getAllTickets(int page, int size) {
+    public Page<TicketResponse> getAllTickets(Long projectId, TicketStatus status, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        return ticketRepository.findAll(pageable)
-                .map(this::toResponse);
+
+        if (projectId != null && status != null) {
+            return ticketRepository.findByProjectIdAndStatus(projectId, status, pageable)
+                    .map(this::toResponse);
+        } else if (projectId != null) {
+            return ticketRepository.findByProjectId(projectId, pageable)
+                    .map(this::toResponse);
+        } else if (status != null) {
+            return ticketRepository.findByStatus(status, pageable)
+                    .map(this::toResponse);
+        } else {
+            return ticketRepository.findAll(pageable)
+                    .map(this::toResponse);
+        }
     }
 
     @Caching(evict = {

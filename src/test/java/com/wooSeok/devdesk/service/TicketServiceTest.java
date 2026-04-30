@@ -210,7 +210,7 @@ class TicketServiceTest {
 
         when(ticketRepository.findAll(any(Pageable.class))).thenReturn(page);
 
-        Page<TicketResponse> responses = ticketService.getAllTickets(0, 10);
+        Page<TicketResponse> responses = ticketService.getAllTickets(null, null, 0, 10);
 
         assertThat(responses.getContent()).hasSize(1);
         assertThat(responses.getContent().get(0).getTitle()).isEqualTo("Test Ticket");

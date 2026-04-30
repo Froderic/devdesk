@@ -1,5 +1,6 @@
 package com.wooSeok.devdesk.controller;
 
+import com.wooSeok.devdesk.domain.enums.TicketStatus;
 import com.wooSeok.devdesk.dto.request.CreateTicketRequest;
 import com.wooSeok.devdesk.dto.request.UpdateTicketRequest;
 import com.wooSeok.devdesk.dto.response.TicketResponse;
@@ -30,9 +31,11 @@ public class TicketController {
 
     @GetMapping
     public ResponseEntity<Page<TicketResponse>> getAllTickets(
+            @RequestParam(required = false) Long projectId,
+            @RequestParam(required = false) TicketStatus status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        return ResponseEntity.ok(ticketService.getAllTickets(page, size));
+        return ResponseEntity.ok(ticketService.getAllTickets(projectId, status, page, size));
     }
 
     @PatchMapping("/{id}")
