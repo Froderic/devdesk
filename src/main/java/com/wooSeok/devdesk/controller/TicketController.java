@@ -1,6 +1,7 @@
 package com.wooSeok.devdesk.controller;
 
 import com.wooSeok.devdesk.domain.enums.TicketStatus;
+import com.wooSeok.devdesk.dto.request.AssignTicketRequest;
 import com.wooSeok.devdesk.dto.request.CreateTicketRequest;
 import com.wooSeok.devdesk.dto.request.UpdateTicketRequest;
 import com.wooSeok.devdesk.dto.response.TicketResponse;
@@ -42,6 +43,12 @@ public class TicketController {
     public ResponseEntity<TicketResponse> updateTicket(@PathVariable Long id,
                                                        @RequestBody UpdateTicketRequest request) {
         return ResponseEntity.ok(ticketService.updateTicket(id, request));
+    }
+
+    @PatchMapping("/{id}/assign")
+    public ResponseEntity<TicketResponse> assignTicket(@PathVariable Long id,
+                                                       @Valid @RequestBody AssignTicketRequest request) {
+        return ResponseEntity.ok(ticketService.assignTicket(id, request));
     }
 
     @DeleteMapping("/{id}")

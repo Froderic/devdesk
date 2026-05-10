@@ -4,6 +4,7 @@ import com.wooSeok.devdesk.domain.entity.Project;
 import com.wooSeok.devdesk.domain.entity.Ticket;
 import com.wooSeok.devdesk.domain.entity.User;
 import com.wooSeok.devdesk.domain.enums.TicketStatus;
+import com.wooSeok.devdesk.dto.request.AssignTicketRequest;
 import com.wooSeok.devdesk.dto.request.CreateTicketRequest;
 import com.wooSeok.devdesk.dto.request.UpdateTicketRequest;
 import com.wooSeok.devdesk.dto.response.TicketResponse;
@@ -121,6 +122,26 @@ public class TicketService {
         } catch (ObjectOptimisticLockingFailureException e) {
             throw new OptimisticLockException();
         }
+    }
+
+    public TicketResponse assignTicket(Long ticketId, AssignTicketRequest request) {
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket not found: " + ticketId));
+
+        User assignee = userRepository.findById(request.getAssigneeId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + request.getAssigneeId()));
+
+        ticket.setAssignee(assignee);
+
+        auditLogService.log(
+                ticket,
+                request.getAssigneeId(),
+                "assignee",
+                ticket.getAssignee() != null ? ticket.getAssignee().getName() : "unassigned",
+                assignee.getName()
+        );
+
+        return toResponse(ticketRepository.save(ticket));
     }
 
     @Caching(evict = {

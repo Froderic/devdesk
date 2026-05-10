@@ -1,5 +1,6 @@
 package com.wooSeok.devdesk.controller;
 
+import com.wooSeok.devdesk.dto.request.ChangePasswordRequest;
 import com.wooSeok.devdesk.dto.request.CreateUserRequest;
 import com.wooSeok.devdesk.dto.response.UserResponse;
 import com.wooSeok.devdesk.service.UserService;
@@ -31,6 +32,13 @@ public class UserController {
     @GetMapping
     public ResponseEntity<List<UserResponse>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
+    }
+
+    @PatchMapping("/{id}/change-password")
+    public ResponseEntity<Void> changePassword(@PathVariable Long id,
+                                               @Valid @RequestBody ChangePasswordRequest request) {
+        userService.changePassword(id, request);
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}")

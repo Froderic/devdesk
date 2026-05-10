@@ -1,6 +1,7 @@
 package com.wooSeok.devdesk.service;
 
 import com.wooSeok.devdesk.domain.entity.User;
+import com.wooSeok.devdesk.dto.request.ChangePasswordRequest;
 import com.wooSeok.devdesk.dto.request.CreateUserRequest;
 import com.wooSeok.devdesk.dto.response.UserResponse;
 import com.wooSeok.devdesk.exception.DuplicateEmailException;
@@ -48,6 +49,18 @@ public class UserService implements UserDetailsService {
                 .stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    public void changePassword(Long userId, ChangePasswordRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new RuntimeException("Current password is incorrect");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
     }
 
     public void deleteUser(Long id) {
