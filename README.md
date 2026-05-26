@@ -39,27 +39,27 @@ A developer issue tracking system (Jira-inspired) built as a capstone backend po
 ## Architecture Decisions
 
 ### Why Redis for Caching?
-Tickets and project stats are read far more often than they are written. Without caching, every `GET /api/tickets/{id}` hits PostgreSQL — expensive at scale. Redis sits in front of the database as an in-memory cache with a 10-minute TTL.
+Tickets and project stats are read far more frequently than they are written. Caching at the service layer with a 10-minute TTL reduces database load on the hot read path without sacrificing consistency — cache entries are evicted immediately on any mutation via `@CacheEvict`.
 
-**Tradeoff considered:** Redis adds operational complexity and infrastructure cost. For a small dev tool this is overkill, but it demonstrates understanding of read-heavy workload optimization.
+For project stats, `allEntries = true` was chosen over per-project key invalidation. Tracking affected project IDs across ticket mutations adds implementation complexity that isn't justified given stats are not on the critical path.
 
-**Cache invalidation strategy:** `@CacheEvict` on ticket updates and deletes. For project stats, `allEntries = true` was chosen over precise per-project invalidation — the simpler approach is justified because stats are not the hot path and the complexity of tracking affected project IDs outweighs the benefit.
+Production deployment uses AWS ElastiCache; local development uses a Docker-managed Redis instance for environment parity.
 
 ### Why Optimistic Locking?
-Two developers updating the same ticket simultaneously would cause a lost update — the second save silently overwrites the first. Optimistic locking adds a `@Version` field to the Ticket entity. Hibernate checks the version on every UPDATE — if it changed since the record was read, it throws `ObjectOptimisticLockingFailureException`, which we catch and return as a clean 409 Conflict.
+Concurrent ticket updates without concurrency control cause silent lost updates — the second write overwrites the first with no error. Optimistic locking adds a `@Version` field to the Ticket entity; Hibernate validates the version on every UPDATE and throws `ObjectOptimisticLockingFailureException` on mismatch, which the exception handler maps to a clean 409 Conflict response.
 
-**Why not pessimistic locking?** Pessimistic locking (SELECT FOR UPDATE) blocks concurrent reads and creates contention. For a ticket tracker where simultaneous edits are rare, optimistic locking is the correct choice — no waiting, occasional conflict errors the client handles gracefully.
+Pessimistic locking was ruled out because it blocks concurrent reads and introduces contention that isn't warranted when simultaneous edits are rare. Optimistic locking keeps reads non-blocking and surfaces conflicts only when they actually occur.
 
 ### Why JWT over Sessions?
-JWT is stateless — the server doesn't store session state anywhere. This makes horizontal scaling trivial (any instance can validate any token) and eliminates the need for a session store. Tokens are signed with HS256 and expire after 24 hours.
+Stateless authentication eliminates server-side session storage, making horizontal scaling straightforward — any instance can validate any token without shared state. Tokens are signed with HS256 and expire after 24 hours.
 
-**Tradeoff:** JWTs cannot be invalidated before expiry without a blocklist (which reintroduces state). Acceptable for this use case — in production, short-lived access tokens + refresh tokens would address this.
+The known tradeoff is that JWTs cannot be revoked before expiry without reintroducing state via a blocklist. For this use case the tradeoff is acceptable; a production system would pair short-lived access tokens with refresh tokens to reduce the revocation window.
 
-### Why Optimistic over Flat Exception Hierarchy?
-Each error type has its own exception class (`ResourceNotFoundException`, `InvalidStatusTransitionException`, `DuplicateEmailException`, `OptimisticLockException`). This maps directly to HTTP semantics — 404, 400, 409, 409 respectively — handled centrally in `GlobalExceptionHandler`. Callers get meaningful error messages and correct HTTP status codes.
+### Exception Hierarchy and HTTP Semantics
+Each error condition has a dedicated exception class — `ResourceNotFoundException`, `InvalidStatusTransitionException`, `DuplicateEmailException`, `OptimisticLockException` — handled centrally in `GlobalExceptionHandler`. This maps domain errors directly to HTTP semantics (404, 400, 409, 409) and keeps error handling out of service and controller logic.
 
 ### Status Workflow Enforcement
-Transition rules live on the `TicketStatus` enum itself via a `canTransitionTo()` method backed by a static transition map. This keeps workflow logic close to the domain concept it belongs to, rather than scattered across service methods.
+Valid ticket transitions are defined directly on the `TicketStatus` enum via a `canTransitionTo()` method backed by a static transition map. Encoding workflow rules on the domain object itself — rather than in service methods — keeps the constraint co-located with the concept it governs and makes invalid transitions impossible to reach without explicitly bypassing the enum.
 
 ---
 
