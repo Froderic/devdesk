@@ -1,6 +1,6 @@
 # DevDesk
 
-A developer issue tracking system (Jira-inspired) built as a capstone backend portfolio project. Designed to demonstrate production-grade engineering decisions, not just implementation.
+Project management tools need reliable concurrent access. When multiple team members update the same ticket simultaneously, race conditions cause silent data loss without careful handling at the database level. DevDesk is a REST API that addresses this with optimistic locking for conflict detection, JWT-based authentication, and PostgreSQL-backed persistence, with GitHub Actions CI/CD and 92% test coverage.
 
 ---
 
