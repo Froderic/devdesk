@@ -9,6 +9,7 @@ import com.wooSeok.devdesk.repository.AuditLogRepository;
 import com.wooSeok.devdesk.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -35,6 +36,7 @@ public class AuditLogService {
         auditLogRepository.save(log);
     }
 
+    @Transactional(readOnly = true)
     public List<AuditLogResponse> getLogsForTicket(Long ticketId) {
         return auditLogRepository.findByTicketIdOrderByChangedAtAsc(ticketId)
                 .stream()

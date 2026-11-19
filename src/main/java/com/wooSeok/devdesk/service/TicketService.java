@@ -24,6 +24,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -61,6 +62,7 @@ public class TicketService {
         return toResponse(saved);
     }
 
+    @Transactional(readOnly = true)
     @Cacheable(value = "tickets", key = "#id")
     public TicketResponse getTicketById(Long id) {
         Ticket ticket = ticketRepository.findById(id)
@@ -68,6 +70,7 @@ public class TicketService {
         return toResponse(ticket);
     }
 
+    @Transactional(readOnly = true)
     public Page<TicketResponse> getAllTickets(Long projectId, TicketStatus status, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
 
@@ -86,6 +89,7 @@ public class TicketService {
         }
     }
 
+    @Transactional
     @Caching(evict = {
             @CacheEvict(value = "tickets", key = "#id"),
             @CacheEvict(value = "project-stats", allEntries = true)
