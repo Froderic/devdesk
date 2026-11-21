@@ -18,6 +18,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +28,7 @@ public class ProjectService {
     private final UserRepository userRepository;
     private final TicketRepository ticketRepository;
 
+    @Transactional
     public ProjectResponse createProject(CreateProjectRequest request) {
         User createdBy = userRepository.findById(request.getCreatedById())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + request.getCreatedById()));
@@ -41,6 +43,7 @@ public class ProjectService {
         return toResponse(saved);
     }
 
+    @Transactional(readOnly = true)
     @Cacheable(value = "projects", key = "#id")
     public ProjectResponse getProjectById(Long id) {
         Project project = projectRepository.findById(id)
@@ -48,12 +51,14 @@ public class ProjectService {
         return toResponse(project);
     }
 
+    @Transactional(readOnly = true)
     public Page<ProjectResponse> getAllProjects(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         return projectRepository.findAll(pageable)
                 .map(this::toResponse);
     }
 
+    @Transactional
     @CacheEvict(value = "projects", key = "#id")
     public void deleteProject(Long id) {
         Project project = projectRepository.findById(id)
@@ -61,6 +66,7 @@ public class ProjectService {
         projectRepository.delete(project);
     }
 
+    @Transactional(readOnly = true)
     @Cacheable(value = "project-stats", key = "#projectId")
     public ProjectStatsResponse getProjectStats(Long projectId) {
         projectRepository.findById(projectId)

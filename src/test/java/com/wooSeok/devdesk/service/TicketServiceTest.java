@@ -96,14 +96,14 @@ class TicketServiceTest {
 
         when(projectRepository.findById(1L)).thenReturn(Optional.of(testProject));
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
-        when(ticketRepository.save(any(Ticket.class))).thenReturn(testTicket);
+        when(ticketRepository.saveAndFlush(any(Ticket.class))).thenReturn(testTicket);
 
         TicketResponse response = ticketService.createTicket(request);
 
         assertThat(response.getTitle()).isEqualTo("Test Ticket");
         assertThat(response.getStatus()).isEqualTo(TicketStatus.OPEN);
         assertThat(response.getPriority()).isEqualTo(Priority.MEDIUM);
-        verify(ticketRepository).save(any(Ticket.class));
+        verify(ticketRepository).saveAndFlush(any(Ticket.class));
     }
 
     @Test
@@ -119,7 +119,7 @@ class TicketServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("99");
 
-        verify(ticketRepository, never()).save(any(Ticket.class));
+        verify(ticketRepository, never()).saveAndFlush(any(Ticket.class));
     }
 
     @Test
@@ -146,16 +146,17 @@ class TicketServiceTest {
         UpdateTicketRequest request = new UpdateTicketRequest();
         request.setStatus(TicketStatus.IN_PROGRESS);
         request.setChangedById(1L);
+        request.setVersion(0L);
 
         when(ticketRepository.findById(1L)).thenReturn(Optional.of(testTicket));
-        when(ticketRepository.save(any(Ticket.class))).thenReturn(testTicket);
+        when(ticketRepository.saveAndFlush(any(Ticket.class))).thenReturn(testTicket);
 
         TicketResponse response = ticketService.updateTicket(1L, request);
 
         assertThat(response).isNotNull();
         verify(auditLogService).log(any(Ticket.class), eq(1L), eq("status"),
                 eq("OPEN"), eq("IN_PROGRESS"));
-        verify(ticketRepository).save(any(Ticket.class));
+        verify(ticketRepository).saveAndFlush(any(Ticket.class));
     }
 
     @Test
@@ -163,13 +164,14 @@ class TicketServiceTest {
         UpdateTicketRequest request = new UpdateTicketRequest();
         request.setStatus(TicketStatus.CLOSED);
         request.setChangedById(1L);
+        request.setVersion(0L);
 
         when(ticketRepository.findById(1L)).thenReturn(Optional.of(testTicket));
 
         assertThatThrownBy(() -> ticketService.updateTicket(1L, request))
                 .isInstanceOf(InvalidStatusTransitionException.class);
 
-        verify(ticketRepository, never()).save(any(Ticket.class));
+        verify(ticketRepository, never()).saveAndFlush(any(Ticket.class));
     }
 
     @Test
@@ -177,13 +179,30 @@ class TicketServiceTest {
         UpdateTicketRequest request = new UpdateTicketRequest();
         request.setTitle("Updated Title");
         request.setChangedById(1L);
+        request.setVersion(0L);
 
         when(ticketRepository.findById(1L)).thenReturn(Optional.of(testTicket));
-        when(ticketRepository.save(any(Ticket.class)))
+        when(ticketRepository.saveAndFlush(any(Ticket.class)))
                 .thenThrow(new ObjectOptimisticLockingFailureException(Ticket.class, 1L));
 
         assertThatThrownBy(() -> ticketService.updateTicket(1L, request))
                 .isInstanceOf(OptimisticLockException.class);
+    }
+
+    @Test
+    void updateTicket_staleVersion_throwsOptimisticLock(){
+        UpdateTicketRequest request = new UpdateTicketRequest();
+        request.setTitle("Updated Title");
+        request.setChangedById(1L);
+        request.setVersion(5L);
+
+        when(ticketRepository.findById(1L)).thenReturn(Optional.of(testTicket));
+
+        assertThatThrownBy(() -> ticketService.updateTicket(1L, request))
+                .isInstanceOf(OptimisticLockException.class);
+
+        verify(ticketRepository, never()).saveAndFlush(any(Ticket.class));
+        verifyNoInteractions(auditLogService);
     }
 
     @Test
@@ -215,4 +234,6 @@ class TicketServiceTest {
         assertThat(responses.getContent()).hasSize(1);
         assertThat(responses.getContent().get(0).getTitle()).isEqualTo("Test Ticket");
     }
+
+
 }

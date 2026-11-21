@@ -26,6 +26,8 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Objects;
+
 @Service
 @RequiredArgsConstructor
 public class TicketService {
@@ -35,6 +37,7 @@ public class TicketService {
     private final UserRepository userRepository;
     private final AuditLogService auditLogService;
 
+    @Transactional
     public TicketResponse createTicket(CreateTicketRequest request) {
         Project project = projectRepository.findById(request.getProjectId())
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found: " + request.getProjectId()));
@@ -58,7 +61,7 @@ public class TicketService {
                 .assignee(assignee)
                 .build();
 
-        Ticket saved = ticketRepository.save(ticket);
+        Ticket saved = ticketRepository.saveAndFlush(ticket);
         return toResponse(saved);
     }
 
@@ -97,6 +100,7 @@ public class TicketService {
     public TicketResponse updateTicket(Long id, UpdateTicketRequest request) {
         Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found: " + id));
+        if(!Objects.equals(request.getVersion(), ticket.getVersion())) throw new OptimisticLockException();
 
         if (request.getTitle() != null) ticket.setTitle(request.getTitle());
         if (request.getDescription() != null) ticket.setDescription(request.getDescription());
@@ -122,15 +126,18 @@ public class TicketService {
         }
 
         try {
-            return toResponse(ticketRepository.save(ticket));
+            return toResponse(ticketRepository.saveAndFlush(ticket));
         } catch (ObjectOptimisticLockingFailureException e) {
             throw new OptimisticLockException();
         }
     }
 
+    @Transactional
     public TicketResponse assignTicket(Long ticketId, AssignTicketRequest request) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found: " + ticketId));
+
+        User oldAssignee = ticket.getAssignee();
 
         User assignee = userRepository.findById(request.getAssigneeId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + request.getAssigneeId()));
@@ -141,17 +148,18 @@ public class TicketService {
                 ticket,
                 request.getAssigneeId(),
                 "assignee",
-                ticket.getAssignee() != null ? ticket.getAssignee().getName() : "unassigned",
+                oldAssignee != null ? oldAssignee.getName() : "unassigned",
                 assignee.getName()
         );
 
-        return toResponse(ticketRepository.save(ticket));
+        return toResponse(ticketRepository.saveAndFlush(ticket));
     }
 
     @Caching(evict = {
             @CacheEvict(value = "tickets", key = "#id"),
             @CacheEvict(value = "project-stats", allEntries = true)
     })
+    @Transactional
     public void deleteTicket(Long id) {
         Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found: " + id));

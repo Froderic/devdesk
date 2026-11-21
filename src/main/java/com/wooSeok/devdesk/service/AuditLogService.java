@@ -20,6 +20,7 @@ public class AuditLogService {
     private final AuditLogRepository auditLogRepository;
     private final UserRepository userRepository;
 
+    @Transactional
     public void log(Ticket ticket, Long changedById, String fieldChanged,
                     String oldValue, String newValue) {
         User changedBy = userRepository.findById(changedById)

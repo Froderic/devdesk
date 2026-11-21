@@ -16,4 +16,6 @@ public class UpdateTicketRequest {
     private Long assigneeId;
     @NotNull
     private Long changedById;
+    @NotNull
+    private Long version;
 }
