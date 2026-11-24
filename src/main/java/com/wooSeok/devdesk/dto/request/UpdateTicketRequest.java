@@ -15,7 +15,5 @@ public class UpdateTicketRequest {
     private Priority priority;
     private Long assigneeId;
     @NotNull
-    private Long changedById;
-    @NotNull
     private Long version;
 }

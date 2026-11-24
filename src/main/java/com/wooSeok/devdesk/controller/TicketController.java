@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -21,8 +23,9 @@ public class TicketController {
     private final TicketService ticketService;
 
     @PostMapping
-    public ResponseEntity<TicketResponse> createTicket(@Valid @RequestBody CreateTicketRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(ticketService.createTicket(request));
+    public ResponseEntity<TicketResponse> createTicket(@Valid @RequestBody CreateTicketRequest request,
+                                                       @AuthenticationPrincipal UserDetails principal ) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(ticketService.createTicket(request, principal.getUsername()));
     }
 
     @GetMapping("/{id}")
@@ -41,14 +44,16 @@ public class TicketController {
 
     @PatchMapping("/{id}")
     public ResponseEntity<TicketResponse> updateTicket(@PathVariable Long id,
-                                                       @RequestBody UpdateTicketRequest request) {
-        return ResponseEntity.ok(ticketService.updateTicket(id, request));
+                                                       @RequestBody UpdateTicketRequest request,
+                                                       @AuthenticationPrincipal UserDetails principal) {
+        return ResponseEntity.ok(ticketService.updateTicket(id, request, principal.getUsername()));
     }
 
     @PatchMapping("/{id}/assign")
     public ResponseEntity<TicketResponse> assignTicket(@PathVariable Long id,
-                                                       @Valid @RequestBody AssignTicketRequest request) {
-        return ResponseEntity.ok(ticketService.assignTicket(id, request));
+                                                       @Valid @RequestBody AssignTicketRequest request,
+                                                       @AuthenticationPrincipal UserDetails principal) {
+        return ResponseEntity.ok(ticketService.assignTicket(id, request, principal.getUsername()));
     }
 
     @DeleteMapping("/{id}")

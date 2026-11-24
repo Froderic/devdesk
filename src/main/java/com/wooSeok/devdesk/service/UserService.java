@@ -1,6 +1,7 @@
 package com.wooSeok.devdesk.service;
 
 import com.wooSeok.devdesk.domain.entity.User;
+import com.wooSeok.devdesk.domain.enums.Role;
 import com.wooSeok.devdesk.dto.request.ChangePasswordRequest;
 import com.wooSeok.devdesk.dto.request.CreateUserRequest;
 import com.wooSeok.devdesk.dto.response.UserResponse;
@@ -33,7 +34,7 @@ public class UserService implements UserDetailsService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .name(request.getName())
-                .role(request.getRole())
+                .role(Role.REPORTER)
                 .build();
 
         User saved = userRepository.save(user);

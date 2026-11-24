@@ -70,12 +70,11 @@ class ProjectServiceTest {
         CreateProjectRequest request = new CreateProjectRequest();
         request.setName("Test Project");
         request.setDescription("Test Description");
-        request.setCreatedById(1L);
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
+        when(userRepository.findByEmail("test@devdesk.com")).thenReturn(Optional.of(testUser));
         when(projectRepository.save(any(Project.class))).thenReturn(testProject);
 
-        ProjectResponse response = projectService.createProject(request);
+        ProjectResponse response = projectService.createProject(request, "test@devdesk.com");
 
         assertThat(response.getName()).isEqualTo("Test Project");
         assertThat(response.getCreatedByName()).isEqualTo("Test User");
@@ -86,13 +85,12 @@ class ProjectServiceTest {
     void createProject_userNotFound_throwsException() {
         CreateProjectRequest request = new CreateProjectRequest();
         request.setName("Test Project");
-        request.setCreatedById(99L);
 
-        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+        when(userRepository.findByEmail("ghost@devdesk.com")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> projectService.createProject(request))
+        assertThatThrownBy(() -> projectService.createProject(request, "ghost@devdesk.com"))
                 .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessageContaining("99");
+                .hasMessageContaining("ghost@devdesk.com");
 
         verify(projectRepository, never()).save(any(Project.class));
     }

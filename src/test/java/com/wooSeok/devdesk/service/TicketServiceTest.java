@@ -92,13 +92,12 @@ class TicketServiceTest {
         request.setDescription("Test Description");
         request.setPriority(Priority.MEDIUM);
         request.setProjectId(1L);
-        request.setReporterId(1L);
 
         when(projectRepository.findById(1L)).thenReturn(Optional.of(testProject));
-        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
+        when(userRepository.findByEmail("test@devdesk.com")).thenReturn(Optional.of(testUser));
         when(ticketRepository.saveAndFlush(any(Ticket.class))).thenReturn(testTicket);
 
-        TicketResponse response = ticketService.createTicket(request);
+        TicketResponse response = ticketService.createTicket(request,"test@devdesk.com");
 
         assertThat(response.getTitle()).isEqualTo("Test Ticket");
         assertThat(response.getStatus()).isEqualTo(TicketStatus.OPEN);
@@ -111,11 +110,10 @@ class TicketServiceTest {
         CreateTicketRequest request = new CreateTicketRequest();
         request.setTitle("Test Ticket");
         request.setProjectId(99L);
-        request.setReporterId(1L);
 
         when(projectRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> ticketService.createTicket(request))
+        assertThatThrownBy(() -> ticketService.createTicket(request, "test@devdesk.com" ))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("99");
 
@@ -145,13 +143,13 @@ class TicketServiceTest {
     void updateTicket_validStatusTransition_success() {
         UpdateTicketRequest request = new UpdateTicketRequest();
         request.setStatus(TicketStatus.IN_PROGRESS);
-        request.setChangedById(1L);
         request.setVersion(0L);
 
         when(ticketRepository.findById(1L)).thenReturn(Optional.of(testTicket));
         when(ticketRepository.saveAndFlush(any(Ticket.class))).thenReturn(testTicket);
+        when(userRepository.findByEmail("test@devdesk.com")).thenReturn(Optional.of(testUser));
 
-        TicketResponse response = ticketService.updateTicket(1L, request);
+        TicketResponse response = ticketService.updateTicket(1L, request, "test@devdesk.com");
 
         assertThat(response).isNotNull();
         verify(auditLogService).log(any(Ticket.class), eq(1L), eq("status"),
@@ -163,12 +161,11 @@ class TicketServiceTest {
     void updateTicket_invalidStatusTransition_throwsException() {
         UpdateTicketRequest request = new UpdateTicketRequest();
         request.setStatus(TicketStatus.CLOSED);
-        request.setChangedById(1L);
         request.setVersion(0L);
 
         when(ticketRepository.findById(1L)).thenReturn(Optional.of(testTicket));
 
-        assertThatThrownBy(() -> ticketService.updateTicket(1L, request))
+        assertThatThrownBy(() -> ticketService.updateTicket(1L, request, "test@devdesk.com"))
                 .isInstanceOf(InvalidStatusTransitionException.class);
 
         verify(ticketRepository, never()).saveAndFlush(any(Ticket.class));
@@ -178,14 +175,13 @@ class TicketServiceTest {
     void updateTicket_optimisticLock_throwsException() {
         UpdateTicketRequest request = new UpdateTicketRequest();
         request.setTitle("Updated Title");
-        request.setChangedById(1L);
         request.setVersion(0L);
 
         when(ticketRepository.findById(1L)).thenReturn(Optional.of(testTicket));
         when(ticketRepository.saveAndFlush(any(Ticket.class)))
                 .thenThrow(new ObjectOptimisticLockingFailureException(Ticket.class, 1L));
 
-        assertThatThrownBy(() -> ticketService.updateTicket(1L, request))
+        assertThatThrownBy(() -> ticketService.updateTicket(1L, request, "test@devdesk.com"))
                 .isInstanceOf(OptimisticLockException.class);
     }
 
@@ -193,12 +189,11 @@ class TicketServiceTest {
     void updateTicket_staleVersion_throwsOptimisticLock(){
         UpdateTicketRequest request = new UpdateTicketRequest();
         request.setTitle("Updated Title");
-        request.setChangedById(1L);
         request.setVersion(5L);
 
         when(ticketRepository.findById(1L)).thenReturn(Optional.of(testTicket));
 
-        assertThatThrownBy(() -> ticketService.updateTicket(1L, request))
+        assertThatThrownBy(() -> ticketService.updateTicket(1L, request, "test@devdesk.com"))
                 .isInstanceOf(OptimisticLockException.class);
 
         verify(ticketRepository, never()).saveAndFlush(any(Ticket.class));

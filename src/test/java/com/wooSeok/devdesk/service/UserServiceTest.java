@@ -10,6 +10,7 @@ import com.wooSeok.devdesk.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -55,7 +56,6 @@ class UserServiceTest {
         request.setEmail("test@devdesk.com");
         request.setPassword("password123");
         request.setName("Test User");
-        request.setRole(Role.ADMIN);
 
         when(userRepository.existsByEmail(request.getEmail())).thenReturn(false);
         when(passwordEncoder.encode(request.getPassword())).thenReturn("hashedPassword");
@@ -65,8 +65,10 @@ class UserServiceTest {
 
         assertThat(response.getEmail()).isEqualTo("test@devdesk.com");
         assertThat(response.getName()).isEqualTo("Test User");
-        assertThat(response.getRole()).isEqualTo(Role.ADMIN);
-        verify(userRepository).save(any(User.class));
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(captor.capture());
+        assertThat(captor.getValue().getRole()).isEqualTo(Role.REPORTER);
     }
 
     @Test
@@ -75,7 +77,6 @@ class UserServiceTest {
         request.setEmail("test@devdesk.com");
         request.setPassword("password123");
         request.setName("Test User");
-        request.setRole(Role.ADMIN);
 
         when(userRepository.existsByEmail(request.getEmail())).thenReturn(true);
 

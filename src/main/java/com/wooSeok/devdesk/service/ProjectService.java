@@ -29,9 +29,9 @@ public class ProjectService {
     private final TicketRepository ticketRepository;
 
     @Transactional
-    public ProjectResponse createProject(CreateProjectRequest request) {
-        User createdBy = userRepository.findById(request.getCreatedById())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + request.getCreatedById()));
+    public ProjectResponse createProject(CreateProjectRequest request, String callerEmail) {
+        User createdBy = userRepository.findByEmail(callerEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + callerEmail));
 
         Project project = Project.builder()
                 .name(request.getName())

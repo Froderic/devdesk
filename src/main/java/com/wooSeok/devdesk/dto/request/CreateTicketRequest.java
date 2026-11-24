@@ -16,7 +16,5 @@ public class CreateTicketRequest {
     private Priority priority;
     @NotNull
     private Long projectId;
-    @NotNull
-    private Long reporterId;
     private Long assigneeId;
 }

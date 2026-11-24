@@ -38,12 +38,12 @@ public class TicketService {
     private final AuditLogService auditLogService;
 
     @Transactional
-    public TicketResponse createTicket(CreateTicketRequest request) {
+    public TicketResponse createTicket(CreateTicketRequest request, String callerEmail) {
         Project project = projectRepository.findById(request.getProjectId())
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found: " + request.getProjectId()));
 
-        User reporter = userRepository.findById(request.getReporterId())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + request.getReporterId()));
+        User reporter = userRepository.findByEmail(callerEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + callerEmail));
 
         User assignee = null;
         if (request.getAssigneeId() != null) {
@@ -97,7 +97,7 @@ public class TicketService {
             @CacheEvict(value = "tickets", key = "#id"),
             @CacheEvict(value = "project-stats", allEntries = true)
     })
-    public TicketResponse updateTicket(Long id, UpdateTicketRequest request) {
+    public TicketResponse updateTicket(Long id, UpdateTicketRequest request, String callerEmail) {
         Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found: " + id));
         if(!Objects.equals(request.getVersion(), ticket.getVersion())) throw new OptimisticLockException();
@@ -108,9 +108,11 @@ public class TicketService {
             if (!ticket.getStatus().canTransitionTo(request.getStatus())) {
                 throw new InvalidStatusTransitionException(ticket.getStatus(), request.getStatus());
             }
+            User changedBy = userRepository.findByEmail(callerEmail)
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found: " + callerEmail));
             auditLogService.log(
                     ticket,
-                    request.getChangedById(),
+                    changedBy.getId(),
                     "status",
                     ticket.getStatus().name(),
                     request.getStatus().name()
@@ -133,20 +135,20 @@ public class TicketService {
     }
 
     @Transactional
-    public TicketResponse assignTicket(Long ticketId, AssignTicketRequest request) {
+    public TicketResponse assignTicket(Long ticketId, AssignTicketRequest request, String callerEmail) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found: " + ticketId));
 
         User oldAssignee = ticket.getAssignee();
 
-        User assignee = userRepository.findById(request.getAssigneeId())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + request.getAssigneeId()));
+        User assignee = userRepository.findByEmail(callerEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + callerEmail));
 
         ticket.setAssignee(assignee);
 
         auditLogService.log(
                 ticket,
-                request.getAssigneeId(),
+                assignee.getId(),
                 "assignee",
                 oldAssignee != null ? oldAssignee.getName() : "unassigned",
                 assignee.getName()
