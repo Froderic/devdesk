@@ -4,7 +4,7 @@ import com.wooSeok.devdesk.config.JwtService;
 import com.wooSeok.devdesk.domain.entity.User;
 import com.wooSeok.devdesk.dto.request.LoginRequest;
 import com.wooSeok.devdesk.dto.response.AuthResponse;
-import com.wooSeok.devdesk.exception.ResourceNotFoundException;
+import com.wooSeok.devdesk.exception.InvalidCredentialsException;
 import com.wooSeok.devdesk.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,10 +20,10 @@ public class AuthService {
 
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new InvalidCredentialsException());
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid password");
+            throw new InvalidCredentialsException();
         }
 
         String token = jwtService.generateToken(user.getEmail(), user.getRole().name());

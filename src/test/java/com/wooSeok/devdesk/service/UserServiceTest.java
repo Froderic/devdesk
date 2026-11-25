@@ -2,10 +2,13 @@ package com.wooSeok.devdesk.service;
 
 import com.wooSeok.devdesk.domain.entity.User;
 import com.wooSeok.devdesk.domain.enums.Role;
+import com.wooSeok.devdesk.dto.request.ChangePasswordRequest;
 import com.wooSeok.devdesk.dto.request.CreateUserRequest;
 import com.wooSeok.devdesk.dto.response.UserResponse;
 import com.wooSeok.devdesk.exception.DuplicateEmailException;
+import com.wooSeok.devdesk.exception.InvalidCurrentPasswordException;
 import com.wooSeok.devdesk.exception.ResourceNotFoundException;
+import com.wooSeok.devdesk.exception.SamePasswordException;
 import com.wooSeok.devdesk.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -131,5 +134,50 @@ class UserServiceTest {
 
         assertThatThrownBy(() -> userService.deleteUser(99L))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void changePassword_success() {
+        ChangePasswordRequest request = new ChangePasswordRequest();
+        request.setCurrentPassword("oldPass");
+        request.setNewPassword("newPass");
+
+        when(userRepository.findByEmail("test@devdesk.com")).thenReturn(Optional.of(testUser));
+        when(passwordEncoder.matches("oldPass", "hashedPassword")).thenReturn(true);
+        when(passwordEncoder.encode("newPass")).thenReturn("newHashed");
+
+        userService.changePassword("test@devdesk.com", request);
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(captor.capture());
+        assertThat(captor.getValue().getPassword()).isEqualTo("newHashed");
+    }
+
+    @Test
+    void changePassword_wrongCurrentPassword_throws(){
+        ChangePasswordRequest request = new ChangePasswordRequest();
+        request.setCurrentPassword("incorrectPassword");
+        request.setNewPassword("newPass");
+
+        when(userRepository.findByEmail("test@devdesk.com")).thenReturn(Optional.of(testUser));
+        when(passwordEncoder.matches("incorrectPassword", "hashedPassword")).thenReturn(false);
+
+        assertThatThrownBy(() -> userService.changePassword("test@devdesk.com", request))
+                .isInstanceOf(InvalidCurrentPasswordException.class);
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void changePassword_samePassword_throws(){
+        ChangePasswordRequest request = new ChangePasswordRequest();
+        request.setCurrentPassword("oldPass");
+        request.setNewPassword("oldPass");
+
+        when(userRepository.findByEmail("test@devdesk.com")).thenReturn(Optional.of(testUser));
+        when(passwordEncoder.matches("oldPass", "hashedPassword")).thenReturn(true);
+
+        assertThatThrownBy(() -> userService.changePassword("test@devdesk.com", request))
+        .isInstanceOf(SamePasswordException.class);
+        verify(userRepository, never()).save(any(User.class));
     }
 }

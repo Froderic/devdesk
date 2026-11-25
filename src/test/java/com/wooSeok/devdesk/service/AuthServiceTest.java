@@ -5,7 +5,7 @@ import com.wooSeok.devdesk.domain.entity.User;
 import com.wooSeok.devdesk.domain.enums.Role;
 import com.wooSeok.devdesk.dto.request.LoginRequest;
 import com.wooSeok.devdesk.dto.response.AuthResponse;
-import com.wooSeok.devdesk.exception.ResourceNotFoundException;
+import com.wooSeok.devdesk.exception.InvalidCredentialsException;
 import com.wooSeok.devdesk.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -77,7 +77,8 @@ class AuthServiceTest {
         when(userRepository.findByEmail("unknown@devdesk.com")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.login(request))
-                .isInstanceOf(ResourceNotFoundException.class);
+                .isInstanceOf(InvalidCredentialsException.class)
+                .hasMessage("Invalid email or password");
 
         verify(jwtService, never()).generateToken(any(), any());
     }
@@ -92,8 +93,8 @@ class AuthServiceTest {
         when(passwordEncoder.matches("wrongpassword", "hashedPassword")).thenReturn(false);
 
         assertThatThrownBy(() -> authService.login(request))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Invalid password");
+                .isInstanceOf(InvalidCredentialsException.class)
+                .hasMessage("Invalid email or password");
 
         verify(jwtService, never()).generateToken(any(), any());
     }

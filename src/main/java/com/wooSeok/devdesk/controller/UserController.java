@@ -8,6 +8,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -34,10 +36,10 @@ public class UserController {
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
-    @PatchMapping("/{id}/change-password")
-    public ResponseEntity<Void> changePassword(@PathVariable Long id,
-                                               @Valid @RequestBody ChangePasswordRequest request) {
-        userService.changePassword(id, request);
+    @PatchMapping("/me/change-password")
+    public ResponseEntity<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request,
+                                               @AuthenticationPrincipal UserDetails principal) {
+        userService.changePassword(principal.getUsername(), request);
         return ResponseEntity.noContent().build();
     }
 

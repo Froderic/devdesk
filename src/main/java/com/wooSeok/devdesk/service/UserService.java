@@ -6,7 +6,9 @@ import com.wooSeok.devdesk.dto.request.ChangePasswordRequest;
 import com.wooSeok.devdesk.dto.request.CreateUserRequest;
 import com.wooSeok.devdesk.dto.response.UserResponse;
 import com.wooSeok.devdesk.exception.DuplicateEmailException;
+import com.wooSeok.devdesk.exception.InvalidCurrentPasswordException;
 import com.wooSeok.devdesk.exception.ResourceNotFoundException;
+import com.wooSeok.devdesk.exception.SamePasswordException;
 import com.wooSeok.devdesk.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -57,12 +59,16 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
-    public void changePassword(Long userId, ChangePasswordRequest request) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+    public void changePassword(String callerEmail, ChangePasswordRequest request) {
+        User user = userRepository.findByEmail(callerEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + callerEmail));
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
-            throw new RuntimeException("Current password is incorrect");
+            throw new InvalidCurrentPasswordException();
+        }
+
+        if(passwordEncoder.matches(request.getNewPassword(), user.getPassword())){
+            throw new SamePasswordException();
         }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
